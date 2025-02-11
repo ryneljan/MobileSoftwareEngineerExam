@@ -358,7 +358,7 @@ fun String.isValidEmail(): Boolean {
 }
 
 fun String.isValidPhilippineMobileNumber(): Boolean {
-    val regex = Regex("^(09)\\d{9}\$")
+    val regex = Regex("^(09|\\+639)\\d{9}\$")
     return regex.matches(this)
 }
 
