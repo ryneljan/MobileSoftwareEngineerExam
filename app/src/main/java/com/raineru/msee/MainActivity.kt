@@ -9,13 +9,16 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -35,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -163,6 +167,18 @@ fun HomeScreen(
                 mutableStateOf("")
             }
 
+            var showResult by remember {
+                mutableStateOf(false)
+            }
+
+            StringDisplayDialog(
+                showDialog = showResult,
+                onShowDialogChange = {
+                    showResult = it
+                },
+                message = result
+            )
+
             val isFormValid by remember {
                 derivedStateOf {
                     isFullNameValid && isEmailValid
@@ -171,21 +187,26 @@ fun HomeScreen(
                 }
             }
 
+            var mockyId by remember { mutableStateOf(defaultIds[0]) }
+
             Spacer(modifier = Modifier.height(16.dp))
             SubmitButton(
                 onSubmit = {
                     coroutineScope.launch {
-                        val response = mockyApiClient.submitForm(mockIds.random())
-                        result = when (response) {
-                            is ApiResponse.Success -> response.data.message
-                            is ApiResponse.Error -> response.errorMessage
-                        }
+                        result = mockyApiClient.submitForm(mockyId)
+                        showResult = true
                     }
                 },
                 enabled = isFormValid
             )
 
-            Text(result)
+            Spacer(modifier = Modifier.height(16.dp))
+            MockyInputField(
+                mockyId = mockyId,
+                onMockyIdChange = {
+                    mockyId = it
+                }
+            )
         }
     }
 }
@@ -489,7 +510,60 @@ fun calculateAge(birthDateMillis: Long?): Int? {
     return if (age >= 18) age else null
 }
 
-val mockIds = listOf(
+val defaultIds = listOf(
     "a582905b-cdec-472b-ba2a-6712f7352042",
     "1a774192-ec97-49f4-9d05-68b3315d74e7"
 )
+
+@Composable
+fun MockyInputField(
+    mockyId: String,
+    onMockyIdChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Mocky URL ID Input")
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = mockyId,
+            onValueChange = { onMockyIdChange(it) },
+            label = { Text("Enter Mocky ID") },
+            modifier = Modifier
+                .padding(bottom = 8.dp)
+                .fillMaxWidth()
+        )
+
+        Row {
+            Button(onClick = { onMockyIdChange(defaultIds[0]) }) {
+                Text("success")
+            }
+            Spacer(modifier = Modifier.padding(8.dp))
+            Button(onClick = { onMockyIdChange(defaultIds[1]) }) {
+                Text("failed")
+            }
+        }
+    }
+}
+
+@Composable
+fun StringDisplayDialog(
+    showDialog: Boolean,
+    onShowDialogChange: (Boolean) -> Unit,
+    message: String
+) {
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { onShowDialogChange(false) },
+            title = { Text("Api response") },
+            text = { Text(message) },
+            confirmButton = {
+                Button(onClick = { onShowDialogChange(false) }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
