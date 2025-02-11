@@ -40,9 +40,14 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Column(modifier = modifier.padding(innerPadding).padding(16.dp)) {
+        Column(
+            modifier = modifier
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
             FullNameTextField()
             EmailTextField()
+            PhilippineMobileNumberTextField()
         }
     }
 }
@@ -98,6 +103,35 @@ fun FullNameTextField(
                 Text(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     text = "Invalid Full Name",
+                    color = Color.Red
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun PhilippineMobileNumberTextField(
+    modifier: Modifier = Modifier
+) {
+    var mobileNumber by remember { mutableStateOf("") }
+    var isError by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        modifier = modifier,
+        value = mobileNumber,
+        onValueChange = {
+            mobileNumber = it
+            isError = !it.isValidPhilippineMobileNumber()
+        },
+        label = { Text("Mobile Number") },
+        isError = isError,
+        textStyle = TextStyle(fontSize = 16.sp),
+        supportingText = {
+            if (isError) {
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "Invalid Mobile Number",
                     color = Color.Red
                 )
             }
