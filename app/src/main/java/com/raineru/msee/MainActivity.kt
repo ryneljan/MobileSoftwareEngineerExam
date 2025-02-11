@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
@@ -29,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +42,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.raineru.msee.ui.theme.MobileSoftwareEngineerExamTheme
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.DEFAULT
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,6 +73,33 @@ class MainActivity : ComponentActivity() {
 fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
+    val mockyApiClient = remember {
+        MockyApiClient(
+            HttpClient(OkHttp) {
+                install(Logging) {
+                    logger = Logger.DEFAULT
+                    level = LogLevel.ALL
+                }
+                install(ContentNegotiation) {
+                    json(
+                        Json {
+                            encodeDefaults = true
+                            isLenient = true
+                            allowSpecialFloatingPointValues = true
+                            allowStructuredMapKeys = true
+                            prettyPrint = false
+                            useArrayPolymorphism = false
+                            ignoreUnknownKeys = true
+                        }
+                    )
+                }
+                install(HttpTimeout) {
+                    connectTimeoutMillis = 10_000L
+                }
+            }
+        )
+    }
+
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
             modifier = modifier
@@ -82,6 +122,27 @@ fun HomeScreen(
             )
 
             GenderDropdown()
+
+            val coroutineScope = rememberCoroutineScope()
+
+            var result by remember {
+                mutableStateOf("")
+            }
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+//                        val response = mockyApiClient.submitForm(mockIds.random())
+                        val response = mockyApiClient.submitForm("unknown_id")
+                        result = when (response) {
+                            is ApiResponse.Success -> response.data.message
+                            is ApiResponse.Error -> response.errorMessage
+                        }
+                    }
+                }
+            ) {
+                Text("SUBMIT")
+            }
+            Text(result)
         }
     }
 }
@@ -319,9 +380,11 @@ fun AgeField(
         1 -> {
             "Age: $age year"
         }
+
         null -> {
             "Age: "
         }
+
         else -> {
             "Age: $age years"
         }
@@ -352,3 +415,8 @@ fun calculateAge(birthDateMillis: Long?): Int? {
 
     return age
 }
+
+val mockIds = listOf(
+    "a582905b-cdec-472b-ba2a-6712f7352042",
+    "1a774192-ec97-49f4-9d05-68b3315d74e7"
+)
