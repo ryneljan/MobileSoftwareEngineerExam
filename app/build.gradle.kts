@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.raineru.msee"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.raineru.msee"
