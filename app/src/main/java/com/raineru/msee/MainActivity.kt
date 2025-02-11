@@ -3,6 +3,7 @@ package com.raineru.msee
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,14 +26,10 @@ import com.raineru.msee.ui.theme.MobileSoftwareEngineerExamTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
+        enableEdgeToEdge()
         setContent {
             MobileSoftwareEngineerExamTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HomeScreen(
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                HomeScreen()
             }
         }
     }
@@ -42,53 +39,70 @@ class MainActivity : ComponentActivity() {
 fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        var fullName by remember { mutableStateOf("") }
-        var isFullNameValid by remember { mutableStateOf(false) }
-
-        OutlinedTextField(
-            value = fullName,
-            onValueChange = {
-                fullName = it
-                isFullNameValid = it.isValidFullName()
-            },
-            label = { Text("Full Name") },
-            isError = isFullNameValid,
-            textStyle = TextStyle(fontSize = 16.sp),
-            supportingText = {
-                if (!isFullNameValid) {
-                    Text(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        text = "Invalid Full Name",
-                        color = Color.Red
-                    )
-                }
-            }
-        )
-
-        var email by remember { mutableStateOf("") }
-        var isEmailValid by remember { mutableStateOf(false) }
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = {
-                email = it
-                isEmailValid = it.isValidEmail()
-            },
-            label = { Text("Email") },
-            isError = isEmailValid,
-            textStyle = TextStyle(fontSize = 16.sp),
-            supportingText = {
-                if (!isEmailValid) {
-                    Text(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        text = "Invalid Email",
-                        color = Color.Red
-                    )
-                }
-            }
-        )
+    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        Column(modifier = modifier.padding(innerPadding).padding(16.dp)) {
+            FullNameTextField()
+            EmailTextField()
+        }
     }
+}
+
+@Composable
+fun EmailTextField(
+    modifier: Modifier = Modifier
+) {
+    var email by remember { mutableStateOf("") }
+    var isEmailValid by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        modifier = modifier,
+        value = email,
+        onValueChange = {
+            email = it
+            isEmailValid = it.isValidEmail()
+        },
+        label = { Text("Email") },
+        isError = isEmailValid,
+        textStyle = TextStyle(fontSize = 16.sp),
+        supportingText = {
+            if (!isEmailValid) {
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "Invalid Email",
+                    color = Color.Red
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun FullNameTextField(
+    modifier: Modifier = Modifier
+) {
+    var fullName by remember { mutableStateOf("") }
+    var isFullNameValid by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        modifier = modifier,
+        value = fullName,
+        onValueChange = {
+            fullName = it
+            isFullNameValid = it.isValidFullName()
+        },
+        label = { Text("Full Name") },
+        isError = isFullNameValid,
+        textStyle = TextStyle(fontSize = 16.sp),
+        supportingText = {
+            if (!isFullNameValid) {
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "Invalid Full Name",
+                    color = Color.Red
+                )
+            }
+        }
+    )
 }
 
 @Preview(showBackground = true)
@@ -108,4 +122,9 @@ fun String.isValidFullName(): Boolean {
 fun String.isValidEmail(): Boolean {
     val emailRegex = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$")
     return emailRegex.matches(this)
+}
+
+fun String.isValidPhilippineMobileNumber(): Boolean {
+    val regex = Regex("^(09)\\d{9}\$")
+    return regex.matches(this)
 }
