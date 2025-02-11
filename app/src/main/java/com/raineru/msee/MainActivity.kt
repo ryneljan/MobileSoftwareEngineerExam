@@ -1,5 +1,6 @@
 package com.raineru.msee
 
+import android.icu.util.Calendar
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,7 +66,14 @@ fun HomeScreen(
             FullNameTextField()
             EmailTextField()
             PhilippineMobileNumberTextField()
-            DatePickerFieldToModal()
+
+            var selectedDate by remember { mutableStateOf<Long?>(null) }
+
+            DatePickerFieldToModal(
+                selectedDate = selectedDate,
+                onDateSelected = { selectedDate = it }
+            )
+            AgeField(selectedDate)
         }
     }
 }
@@ -214,8 +223,11 @@ fun convertMillisToDate(millis: Long): String {
 }
 
 @Composable
-fun DatePickerFieldToModal(modifier: Modifier = Modifier) {
-    var selectedDate by remember { mutableStateOf<Long?>(null) }
+fun DatePickerFieldToModal(
+    selectedDate: Long?,
+    onDateSelected: (Long?) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var showModal by remember { mutableStateOf(false) }
 
     OutlinedTextField(
@@ -240,8 +252,50 @@ fun DatePickerFieldToModal(modifier: Modifier = Modifier) {
 
     if (showModal) {
         DatePickerModal(
-            onDateSelected = { selectedDate = it },
+            onDateSelected = { onDateSelected(it) },
             onDismiss = { showModal = false }
         )
     }
+
+
+}
+
+@Composable
+fun AgeField(
+    selectedDate: Long?,
+    modifier: Modifier = Modifier
+) {
+    val age = calculateAge(selectedDate)
+    if (age != null) {
+        val ageText = if (age == 1) {
+            "Age: $age year"
+        } else {
+            "Age: $age years"
+        }
+        Text(
+            text = ageText,
+            style = TextStyle(
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            ),
+            modifier = modifier
+        )
+    }
+}
+
+fun calculateAge(birthDateMillis: Long?): Int? {
+    if (birthDateMillis == null) return null
+
+    val birthCalendar = Calendar.getInstance().apply {
+        timeInMillis = birthDateMillis
+    }
+    val today = Calendar.getInstance()
+
+    var age = today.get(Calendar.YEAR) - birthCalendar.get(Calendar.YEAR)
+    if (today.get(Calendar.DAY_OF_YEAR) < birthCalendar.get(Calendar.DAY_OF_YEAR)) {
+        age--
+    }
+
+    return age
 }
