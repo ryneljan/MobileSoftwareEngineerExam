@@ -9,7 +9,9 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -27,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -106,53 +109,108 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            FullNameTextField()
-            EmailTextField()
-            PhilippineMobileNumberTextField()
-
-            var selectedDate by remember { mutableStateOf<Long?>(null) }
-
-            DatePickerFieldToModal(
-                selectedDate = selectedDate,
-                onDateSelected = { selectedDate = it }
+            var isFullNameValid by remember { mutableStateOf(false) }
+            FullNameTextField(
+                isFullNameValid = isFullNameValid,
+                onIsFullNameValidChange = {
+                    isFullNameValid = it
+                }
             )
+
+            var isEmailValid by remember { mutableStateOf(false) }
+            EmailTextField(
+                isEmailValid = isEmailValid,
+                onIsEmailValidChange = {
+                    isEmailValid = it
+                }
+            )
+
+            var isMobileNumberValid by remember { mutableStateOf(false) }
+            PhilippineMobileNumberTextField(
+                isMobileNumberValid = isMobileNumberValid,
+                onIsMobileNumberValidChange = {
+                    isMobileNumberValid = it
+                }
+            )
+
+            var birthday by remember { mutableStateOf<Long?>(null) }
+            var isAgeValid by remember { mutableStateOf(false) }
+
+            BirthDayField(
+                selectedDate = birthday,
+                onDateSelected = {
+                    birthday = it
+                    isAgeValid = calculateAge(it) != null
+                },
+                isAgeValid = isAgeValid
+            )
+
             AgeField(
-                selectedDate,
+                birthday,
                 modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
             )
 
-            GenderDropdown()
+            var isGenderSelected by remember { mutableStateOf(false) }
+            GenderDropdown(
+                onIsGenderSelectedChange = {
+                    isGenderSelected = it
+                }
+            )
 
             val coroutineScope = rememberCoroutineScope()
 
             var result by remember {
                 mutableStateOf("")
             }
-            Button(
-                onClick = {
+
+            val isFormValid by remember {
+                derivedStateOf {
+                    isFullNameValid && isEmailValid
+                            && isMobileNumberValid && isAgeValid
+                            && isGenderSelected
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            SubmitButton(
+                onSubmit = {
                     coroutineScope.launch {
-//                        val response = mockyApiClient.submitForm(mockIds.random())
-                        val response = mockyApiClient.submitForm("unknown_id")
+                        val response = mockyApiClient.submitForm(mockIds.random())
                         result = when (response) {
                             is ApiResponse.Success -> response.data.message
                             is ApiResponse.Error -> response.errorMessage
                         }
                     }
-                }
-            ) {
-                Text("SUBMIT")
-            }
+                },
+                enabled = isFormValid
+            )
+
             Text(result)
         }
     }
 }
 
+@Composable
+fun SubmitButton(
+    enabled: Boolean,
+    onSubmit: () -> Unit,
+) {
+    Button(
+        onClick = onSubmit,
+        enabled = enabled
+    ) {
+        Text("SUBMIT")
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GenderDropdown() {
+fun GenderDropdown(
+    onIsGenderSelectedChange: (Boolean) -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
     var selectedGender by remember { mutableStateOf<String?>(null) }
-    val genders = listOf("Male", "Female", "Other")
+    val genders = listOf("Male", "Female")
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -182,6 +240,7 @@ fun GenderDropdown() {
                     onClick = {
                         selectedGender = gender
                         expanded = false
+                        onIsGenderSelectedChange(true)
                     }
                 )
             }
@@ -191,20 +250,21 @@ fun GenderDropdown() {
 
 @Composable
 fun EmailTextField(
+    isEmailValid: Boolean,
+    onIsEmailValidChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var email by remember { mutableStateOf("") }
-    var isEmailValid by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         modifier = modifier,
         value = email,
         onValueChange = {
             email = it
-            isEmailValid = it.isValidEmail()
+            onIsEmailValidChange(it.isValidEmail())
         },
         label = { Text("Email") },
-        isError = isEmailValid,
+        isError = !isEmailValid,
         textStyle = TextStyle(fontSize = 16.sp),
         supportingText = {
             if (!isEmailValid) {
@@ -220,20 +280,21 @@ fun EmailTextField(
 
 @Composable
 fun FullNameTextField(
+    isFullNameValid: Boolean,
+    onIsFullNameValidChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var fullName by remember { mutableStateOf("") }
-    var isFullNameValid by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         modifier = modifier,
         value = fullName,
         onValueChange = {
             fullName = it
-            isFullNameValid = it.isValidFullName()
+            onIsFullNameValidChange(it.isValidFullName())
         },
         label = { Text("Full Name") },
-        isError = isFullNameValid,
+        isError = !isFullNameValid,
         textStyle = TextStyle(fontSize = 16.sp),
         supportingText = {
             if (!isFullNameValid) {
@@ -249,23 +310,24 @@ fun FullNameTextField(
 
 @Composable
 fun PhilippineMobileNumberTextField(
+    isMobileNumberValid: Boolean,
+    onIsMobileNumberValidChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var mobileNumber by remember { mutableStateOf("") }
-    var isError by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         modifier = modifier,
         value = mobileNumber,
         onValueChange = {
             mobileNumber = it
-            isError = !it.isValidPhilippineMobileNumber()
+            onIsMobileNumberValidChange(it.isValidPhilippineMobileNumber())
         },
         label = { Text("Mobile Number") },
-        isError = isError,
+        isError = !isMobileNumberValid,
         textStyle = TextStyle(fontSize = 16.sp),
         supportingText = {
-            if (isError) {
+            if (!isMobileNumberValid) {
                 Text(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     text = "Invalid Mobile Number",
@@ -334,16 +396,17 @@ fun convertMillisToDate(millis: Long): String {
 }
 
 @Composable
-fun DatePickerFieldToModal(
+fun BirthDayField(
     selectedDate: Long?,
     onDateSelected: (Long?) -> Unit,
+    isAgeValid: Boolean,
     modifier: Modifier = Modifier
 ) {
     var showModal by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         value = selectedDate?.let { convertMillisToDate(it) } ?: "",
-        onValueChange = { },
+        onValueChange = {},
         label = { Text("Date of Birth") },
         placeholder = { Text("MM/DD/YYYY") },
         trailingIcon = {
@@ -358,7 +421,17 @@ fun DatePickerFieldToModal(
                         showModal = true
                     }
                 }
+            },
+        isError = !isAgeValid,
+        supportingText = {
+            if (!isAgeValid) {
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "Invalid Age",
+                    color = Color.Red
+                )
             }
+        }
     )
 
     if (showModal) {
@@ -413,7 +486,7 @@ fun calculateAge(birthDateMillis: Long?): Int? {
         age--
     }
 
-    return age
+    return if (age >= 18) age else null
 }
 
 val mockIds = listOf(
