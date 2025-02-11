@@ -12,10 +12,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -73,7 +76,54 @@ fun HomeScreen(
                 selectedDate = selectedDate,
                 onDateSelected = { selectedDate = it }
             )
-            AgeField(selectedDate)
+            AgeField(
+                selectedDate,
+                modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
+            )
+
+            GenderDropdown()
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GenderDropdown() {
+    var expanded by remember { mutableStateOf(false) }
+    var selectedGender by remember { mutableStateOf<String?>(null) }
+    val genders = listOf("Male", "Female", "Other")
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = selectedGender ?: "",
+            onValueChange = { },
+            readOnly = true,
+            label = { Text("Gender") },
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = "Dropdown"
+                )
+            },
+            modifier = Modifier.menuAnchor()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            genders.forEach { gender ->
+                DropdownMenuItem(
+                    text = { Text(text = gender) },
+                    onClick = {
+                        selectedGender = gender
+                        expanded = false
+                    }
+                )
+            }
         }
     }
 }
@@ -265,23 +315,26 @@ fun AgeField(
     selectedDate: Long?,
     modifier: Modifier = Modifier
 ) {
-    val age = calculateAge(selectedDate)
-    if (age != null) {
-        val ageText = if (age == 1) {
+    val ageText = when (val age = calculateAge(selectedDate)) {
+        1 -> {
             "Age: $age year"
-        } else {
+        }
+        null -> {
+            "Age: "
+        }
+        else -> {
             "Age: $age years"
         }
-        Text(
-            text = ageText,
-            style = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            ),
-            modifier = modifier
-        )
     }
+    Text(
+        text = ageText,
+        style = TextStyle(
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        ),
+        modifier = modifier
+    )
 }
 
 fun calculateAge(birthDateMillis: Long?): Int? {
